@@ -9,9 +9,9 @@ apply plugin: "com.modrinth.minotaur"
 apply plugin: "com.github.breadmoirai.github-release"
 apply plugin: "net.darkhax.curseforgegradle"
 
-int mcVersion = 1
+int mcVersion = project.mcVersion
+
 preprocess {
-    mcVersion = vars.get()["MC"] as int
     tabIndentation = false
 }
 
@@ -70,6 +70,23 @@ remapJar {
     remapperIsolation = true
 }
 
+if (mcVersion >= 11800) {
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
+} else if (mcVersion >= 11700) {
+	sourceCompatibility = JavaVersion.VERSION_16
+	targetCompatibility = JavaVersion.VERSION_16
+} else {
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+version = project.mod_version
+group = project.maven_group
+archivesBaseName = project.archives_base_name + "-" + project.mod_version + "+" + project.title_version
+
+// See https://youtrack.jetbrains.com/issue/IDEA-296490
+// if IDEA complains about "Cannot resolve resource filtering of MatchingCopyAction" and you want to know why
 processResources {
     inputs.property "version", project.mod_version
     inputs.property "id", project.mod_id
@@ -87,6 +104,7 @@ processResources {
     }
 }
 
+// https://github.com/Fallen-Breath/yamlang
 yamlang {
     targetSourceSets = [sourceSets.main]
     inputDir = "assets/${project.mod_id}/lang"
@@ -102,17 +120,6 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 java {
-    if (mcVersion >= 11800) {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    } else if (mcVersion >= 11700) {
-        sourceCompatibility = JavaVersion.VERSION_16
-        targetCompatibility = JavaVersion.VERSION_16
-    } else {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
     withSourcesJar()
 }
 
