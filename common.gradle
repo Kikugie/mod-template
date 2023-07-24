@@ -4,7 +4,7 @@ apply plugin: "maven-publish"
 apply plugin: "fabric-loom"
 apply plugin: "com.replaymod.preprocess"
 apply plugin: "me.fallenbreath.yamlang"
-apply plugin: "io.github.juuxel.loom-quiltflower"
+apply plugin: "io.github.juuxel.loom-vineflower"
 apply plugin: "com.modrinth.minotaur"
 apply plugin: "com.github.breadmoirai.github-release"
 apply plugin: "net.darkhax.curseforgegradle"
@@ -17,13 +17,27 @@ preprocess {
 
 repositories {
     maven { url "https://jitpack.io" }
-    maven {
-        name = "Curseforge"
-        url = "https://www.cursemaven.com"
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Curseforge"
+                url = "https://www.cursemaven.com"
+            }
+        }
+        filter {
+            includeGroup "curse.maven"
+        }
     }
-    maven {
-        name = "Modrinth"
-        url = "https://api.modrinth.com/maven"
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
     }
     maven {
         name = "Gradle Plugin Portal"
@@ -129,13 +143,21 @@ jar {
     }
 }
 
-def debug = true
+def debug = false
 
 tasks.register("release") {
+    debug = false
     group("publishing")
     dependsOn("modrinth")
     dependsOn("githubRelease")
-    if (!debug) dependsOn("publishing")
+    dependsOn("publishing")
+}
+
+tasks.register("debugRelease") {
+    debug = true
+    group("publishing")
+    dependsOn("modrinth")
+    dependsOn("githubRelease")
 }
 
 modrinth {
