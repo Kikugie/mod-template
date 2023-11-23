@@ -1,19 +1,10 @@
-import net.darkhax.curseforgegradle.TaskPublishCurseForge
-
 apply plugin: "maven-publish"
 apply plugin: "fabric-loom"
 apply plugin: "com.replaymod.preprocess"
 apply plugin: "me.fallenbreath.yamlang"
-apply plugin: "io.github.juuxel.loom-vineflower"
-apply plugin: "com.modrinth.minotaur"
-apply plugin: "com.github.breadmoirai.github-release"
-apply plugin: "net.darkhax.curseforgegradle"
+apply plugin: "me.modmuss50.mod-publish-plugin"
 
 int mcVersion = project.mcVersion
-
-preprocess {
-    tabIndentation = false
-}
 
 repositories {
     maven { url "https://jitpack.io" }
@@ -71,8 +62,7 @@ dependencies {
 // 	include api(annotationProcessor("com.github.LlamaLad7.mixinextras:mixinextras-fabric:${project.mixin_extras_version}"))
 }
 
-String MIXIN_CONFIG_PATH = "template_mod.mixins.json"
-String LANG_DIR = "assets/${project.mod_id}/lang"
+String MIXIN_CONFIG_PATH = "${project.mod_id}.mixins.json"
 JavaVersion JAVA_COMPATIBILITY
 if (mcVersion >= 11800) {
 	JAVA_COMPATIBILITY = JavaVersion.VERSION_17
@@ -125,10 +115,9 @@ processResources {
 	}
 }
 
-// https://github.com/Fallen-Breath/yamlang
 yamlang {
     targetSourceSets = [sourceSets.main]
-    inputDir = LANG_DIR
+    inputDir = "assets/${project.mod_id}/lang"
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {
@@ -151,76 +140,6 @@ jar {
     }
 }
 
-def debug = false
-
-tasks.register("release") {
-    debug = false
-    group("publishing")
-    dependsOn("modrinth")
-    dependsOn("githubRelease")
-    dependsOn("publishing")
-}
-
-tasks.register("debugRelease") {
-    debug = true
-    group("publishing")
-    dependsOn("modrinth")
-    dependsOn("githubRelease")
-}
-
-modrinth {
-    token = project.findProperty("modrinthToken")
-    projectId = project.mod_id
-    versionName = "${project.mod_name} ${project.mod_version} for ${project.title_version}"
-    versionNumber = project.mod_version
-    versionType = project.release_type
-    uploadFile = remapJar
-    additionalFiles = [sourcesJar]
-    //noinspection GroovyAssignabilityCheck
-    gameVersions = project.release_versions.split(" ").toList()
-    loaders = ["fabric", "quilt"]
-    dependencies {
-
-    }
-    syncBodyFrom = rootProject.file("README.md").text
-    changelog = rootProject.file("CHANGELOG.md").text
-    failSilently = true
-    debugMode = debug
-}
-
-githubRelease {
-    def probablyToken = project.findProperty("githubToken")
-    token = probablyToken == null ? "" : probablyToken
-    owner = project.repo_owner
-    repo = project.mod_id
-    tagName = "v${project.mod_version}"
-    targetCommitish = "multi"
-    releaseName = "${project.mod_name} ${project.mod_version}"
-    body = rootProject.file("CHANGELOG.md").text
-    draft = mcVersion > 11605 // first file should be false
-    releaseAssets = [remapJar, sourcesJar]
-    prerelease = project.release_type != "release"
-    allowUploadToExisting = true // allows publishing multiple files
-    dryRun = debug
-}
-
-tasks.register("curseforge", TaskPublishCurseForge) {
-    group "publishing"
-    disableVersionDetection()
-    apiToken = project.findProperty("curseforgeToken")
-
-    def mainFile = upload(project.project_id, remapJar)
-    mainFile.releaseType = release_type
-    mainFile.displayName = "${project.mod_name} ${project.mod_version} for ${project.title_version}"
-    mainFile.changelog = rootProject.file("CHANGELOG.md").text
-    mainFile.changelogType = "markdown"
-    mainFile.addModLoader "fabric", "quilt"
-    for (String version : project.release_versions.split(" ")) {
-        mainFile.addGameVersion version
-    }
-    debugMode = debug
-}
-
 // configure the maven publication
 publishing {
     repositories {
@@ -236,7 +155,7 @@ publishing {
 
     publications {
         mavenJava(MavenPublication) {
-            groupId = project.maven_group + "." + project.archives_base_name
+            groupId = "${project.maven_group}.${project.archives_base_name}"
             artifactId = project.mod_version
             version = project.title_version
 
